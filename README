@@ -1,0 +1,7 @@
+The JVM is a stack-based bytecode interpreter with profile-driven JIT
+compilation. So is Rubinius.
+
+I like the following analogy: a funnel makes it easy to pour in one
+direction. Pouring Ruby semantics into the JVM is like using a funnel
+backwards. Let's turn this funnel right-side up and pour Java bytecode
+into Rubinius.
