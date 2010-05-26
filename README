@@ -5,3 +5,9 @@ I like the following analogy: a funnel makes it easy to pour in one
 direction. Pouring Ruby semantics into the JVM is like using a funnel
 backwards. Let's turn this funnel right-side up and pour Java bytecode
 into Rubinius.
+
+The basic idea is to read in Java class files, translate the bytecode
+and create Rubinius execution contexts, and run.
+
+Anyway, don't expect any Enterprise (tm) level shit, I'm just playing
+around at the moment. Cool?
