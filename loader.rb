@@ -112,9 +112,8 @@ class JavaLoader
   #{"-" * @name.size}
   Major version: #{@major_version}
   Minor version: #{@minor_version}
-  Constants[#{@constant_pool_count-1}]:
     EOI
-    s << inspect_array("Contants", @constant_pool[1..-1], @constant_pool_count-1)
+    s << inspect_array("Constants", @constant_pool[1..-1], @constant_pool_count-1)
     s << inspect_array("Fields", @fields, @fields_count)
     s << inspect_array("Methods", @methods, @methods_count)
     s << inspect_array("Attributes", @attributes, @attributes_count)
