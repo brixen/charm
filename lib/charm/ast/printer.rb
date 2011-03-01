@@ -11,8 +11,13 @@ module Charm
       end
 
       def nl!
-        @output << nl << indent
-        yield self.class.new(@buffer, @indent + 1) if block_given?
+        if block_given?
+          np = self.class.new(@output, @indent + 1)
+          @output << np.nl
+          yield np
+        else
+          @output << nl
+        end
         self
       end
 

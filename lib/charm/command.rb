@@ -54,7 +54,7 @@ module Charm
         cmd = parse(argv)
         cmd.argv.map { |name|
           cmd.classpath.find_class(name) or raise "Class not found: #{name}"
-        }.map { |res| 
+        }.map { |res|
           res.open_stream { |st| Bytecode::Loader.load_stream(st).normalize }
         }.each { |cls| cls.java_code(AST::Printer.new(STDOUT)); puts }
       end

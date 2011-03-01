@@ -1,7 +1,7 @@
 module Charm
   module Bytecode
     class InvalidClassFile < StandardError; end
-      
+
     class Constant < Loader
       def self.load(ctx)
         idx = ctx.read :u1
@@ -179,7 +179,7 @@ module Charm
       u2 :descriptor_index
       a0 :attributes, Attribute
     end
-    
+
     class ClassFile < Loader
       u4 :magic do |magic, ctx|
         raise InvalidClassFile unless magic == 0xCAFE_BABE
