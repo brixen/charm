@@ -31,7 +31,18 @@ module Charm
          abstract, final, static,
          synchronized, native, strict].compact
       end
+    end
 
+    class Field
+      attr_accessor :name, :type,
+                    :public, :private, :protected,
+                    :static, :final,
+                    :volatile, :transient
+
+      def access_modifiers
+        [@public, @private, @protected,
+         static, final, volatile, transient].compact
+      end
     end
 
   end

@@ -11,11 +11,22 @@ module Charm
         pr << (interface and 'interface' or 'class') << ' '
         pr << name << ' {'
         pr.nl! { |np|
+          fields.map { |m| m.java_code(np.nl!); np.nl! }
+        } unless fields.nil? || fields.empty?
+        pr.nl! { |np|
           methods.map { |m| m.java_code(np.nl!); np.nl! }
-        } unless methods.empty?
+        } unless methods.nil? || methods.empty?
         pr << pr.nl << '}'
       end
 
+    end
+
+    class Field
+      def java_code(pr)
+        pr << access_modifiers.join(' ') << ' ' unless 
+          access_modifiers.empty?
+        pr << type.signature << ' ' << name << ';'
+      end
     end
 
     class Method

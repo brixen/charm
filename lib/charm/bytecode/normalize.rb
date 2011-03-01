@@ -5,6 +5,7 @@ module Charm
         AST::Class.new(qualified_name).tap do |cls|
           [:public, :abstract, :final, :interface].
            each { |am| cls.send("#{am}=", am) if send("#{am}?") }
+          cls.fields = fields.map { |m| m.normalize(self) }
           cls.methods = methods.map { |m| m.normalize(self) }
           cls.source_file = utf8(source_file)
         end
@@ -86,6 +87,47 @@ module Charm
 
       def signature
         name.to_s + ("[]" * dimension)
+      end
+    end
+
+    class Field
+      def normalize(cf)
+        AST::Field.new.tap do |f|
+          desc = cf.utf8(descriptor_index)
+          f.type = Type.from_desc(desc)
+          f.name = cf.utf8(name_index)
+          [:public, :private, :protected,
+           :static, :final, :volatile, :transient ].
+           each { |am| f.send("#{am}=", am) if send("#{am}?") }
+        end
+      end
+
+      def public?
+        (@access_flags & 0x0001) == 0x0001
+      end
+
+      def private?
+        (@access_flags & 0x0002) == 0x0002
+      end
+
+      def protected?
+        (@access_flags & 0x0004) == 0x0004
+      end
+
+      def static?
+        (@access_flags & 0x0008) == 0x0008
+      end
+
+      def final?
+        (@access_flags & 0x0010) == 0x0010
+      end
+
+      def volatile?
+        (@access_flags & 0x0040) == 0x0040
+      end
+
+      def transient?
+        (@access_flags & 0x0080) == 0x0080
       end
     end
 
