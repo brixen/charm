@@ -2,7 +2,7 @@ module Charm
   module Bytecode
     class ClassFile
       def normalize
-        AST::Class.new(name).tap do |cls|
+        AST::Class.new(qualified_name).tap do |cls|
           [:public, :abstract, :final, :interface].
            each { |am| cls.send("#{am}=", am) if send("#{am}?") }
           cls.methods = methods.map { |m| m.normalize(self) }
@@ -11,7 +11,7 @@ module Charm
       end
 
       def qualified_name
-        utf8(self[this_class].name_index)
+        utf8(self[this_class].name_index).gsub('/', '.')
       end
 
       def name
@@ -99,8 +99,10 @@ module Charm
           types = Type.from_method_desc cf.utf8(descriptor_index)
           m.return_type = types.shift
           m.return_type = nil if m.name == "<init>"
+          m.return_type = nil if m.name == "<clinit>"
           m.parameter_types = types
           m.name = cf.name if m.name == "<init>"
+          m.name = nil if m.name == "<clinit>"
         end
       end
 

@@ -24,9 +24,9 @@ module Charm
           access_modifiers.empty?
         pr << return_type.signature << ' ' if return_type
         pr << name
-        pr << '('
+        pr << '(' if name
         pr << parameter_types.map { |p| p.signature }.join(', ')
-        pr << ')'
+        pr << ')' if name
         if abstract
           pr << ';'
         else
