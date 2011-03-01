@@ -11,3 +11,13 @@ and create Rubinius execution contexts, and run.
 
 Anyway, don't expect any Enterprise (tm) level shit, I'm just playing
 around at the moment. Cool?
+
+==
+
+Try it
+------
+
+    $ echo 'public class Hello {}' > Hello.java
+    $ javac Hello.java
+    $ bin/charm javap Hello
+
