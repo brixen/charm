@@ -2,7 +2,8 @@ module Charm
   module AST
     class Class
       attr_accessor :package, :name, :methods, :fields,
-                    :public, :abstract, :final, :interface
+                    :public, :abstract, :final, :interface,
+                    :source_file
 
       def initialize(name)
         @package = name.split('.')

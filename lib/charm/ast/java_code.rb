@@ -3,10 +3,13 @@ module Charm
     class Class
 
       def java_code(pr)
+        pr << 'package ' << package.join('.') << ';' << pr.nl unless 
+           package.empty?
+        pr << '/** Compiled from ' << source_file << ' **/' << pr.nl
         pr << access_modifiers.join(' ') << ' ' unless
           access_modifiers.empty?
         pr << (interface and 'interface' or 'class') << ' '
-        pr << qualified_name << ' {'
+        pr << name << ' {'
         pr.nl! { |np|
           methods.map { |m| m.java_code(np.nl!); np.nl! }
         } unless methods.empty?

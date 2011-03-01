@@ -6,11 +6,12 @@ module Charm
           [:public, :abstract, :final, :interface].
            each { |am| cls.send("#{am}=", am) if send("#{am}?") }
           cls.methods = methods.map { |m| m.normalize(self) }
+          cls.source_file = utf8(source_file)
         end
       end
 
       def qualified_name
-        self[self[this_class].name_index].bytes
+        utf8(self[this_class].name_index)
       end
 
       def name
@@ -47,6 +48,11 @@ module Charm
 
       def class?
         !interface?
+      end
+
+      def source_file
+        attributes.find { |s| Attribute::SourceFile === s }.
+          sourcefile_index
       end
     end
 
