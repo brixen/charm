@@ -1,11 +1,13 @@
 require 'charm/bytecode/loader'
 require 'charm/bytecode/class_file'
+require 'charm/bytecode/sexp'
 require 'charm/bytecode/normalize'
 require 'charm/ast'
 require 'charm/ast/printer'
 require 'charm/ast/java_code'
 require 'charm/classpath'
 require 'ostruct'
+require 'pp'
 
 module Charm
   module Command
@@ -15,7 +17,7 @@ module Charm
       cmd = Java
       if const_defined?(argv.first.capitalize)
         cmd = const_get(argv.shift.capitalize)
-      end
+      end rescue nil
       cmd.run(argv)
     end
 
@@ -29,6 +31,8 @@ module Charm
       puts '             Execute the given class main method.'
       puts ''
       puts '   javap     Print a class file structure'
+      puts ''
+      puts '   sexp      Print a class file as sexp'
       exit 0
     end
 
@@ -50,17 +54,29 @@ module Charm
         cmd
       end
 
-      def self.run(argv = ARGV.dup)
+      def self.load(argv)
         cmd = parse(argv)
         cmd.argv.map { |name|
           cmd.classpath.find_class(name) or raise "Class not found: #{name}"
         }.map { |res|
-          res.open_stream { |st| Bytecode::Loader.load_stream(st).normalize }
-        }.each { |cls| cls.java_code(AST::Printer.new(STDOUT)); puts }
+          res.open_stream { |st| Bytecode::Loader.load_stream(st) }
+        }
+      end
+
+      def self.run(argv = ARGV.dup)
+        load(argv).each { |cls| cls.normalize.java_code(AST::Printer.new(STDOUT)); puts }
+      end
+    end
+
+    class Sexp
+      def self.run(argv = ARGV.dup)
+        Javap.load(argv).each { |cls| pp cls.sexp }
       end
     end
 
     class Java
+      def self.run(argv = ARGV.dup)
+      end 
     end
 
   end
