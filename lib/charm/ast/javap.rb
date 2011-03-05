@@ -2,7 +2,7 @@ module Charm
   module AST
     class Class
 
-      def java_code(pr)
+      def javap(pr)
         pr << 'package ' << package.join('.') << ';' << pr.nl unless 
            package.empty?
         pr << '/** Compiled from ' << source_file << ' **/' << pr.nl
@@ -11,10 +11,10 @@ module Charm
         pr << (interface and 'interface' or 'class') << ' '
         pr << name << ' {'
         pr.nl! { |np|
-          fields.map { |m| m.java_code(np.nl!); np.nl! }
+          fields.map { |m| m.javap(np.nl!); np.nl! }
         } unless fields.nil? || fields.empty?
         pr.nl! { |np|
-          methods.map { |m| m.java_code(np.nl!); np.nl! }
+          methods.map { |m| m.javap(np.nl!); np.nl! }
         } unless methods.nil? || methods.empty?
         pr << pr.nl << '}'
       end
@@ -22,7 +22,7 @@ module Charm
     end
 
     class Field
-      def java_code(pr)
+      def javap(pr)
         pr << access_modifiers.join(' ') << ' ' unless 
           access_modifiers.empty?
         pr << type.signature << ' ' << name << ';'
@@ -30,7 +30,7 @@ module Charm
     end
 
     class Method
-      def java_code(pr)
+      def javap(pr)
         pr << access_modifiers.join(' ') << ' ' unless
           access_modifiers.empty?
         pr << return_type.signature << ' ' if return_type

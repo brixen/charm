@@ -43,7 +43,7 @@ module Charm
         def readers
           @readers ||= []
         end
-        
+
         def un(name, len_type = :u2, &action)
           attr_reader name
           readers.push lambda { |context, object|
