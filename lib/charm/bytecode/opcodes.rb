@@ -1,21 +1,27 @@
 module Charm
   module Bytecode
-
     class Opcode
-      def self.opcodes
-        @opcodes ||= Hash.new
-      end
 
-      def self.opcode(mnemonic, opcode)
-        opcodes[mnemonic] = new mnemonic, opcode
-        yield opcodes[mnemonic] if block_given?
-        opcodes[opcode] = opcodes[mnemonic]
-      end
-
-      def initialize(mnemonic, opcode)
-        @mnemonic, @opcode = mnemonic, opcode
-      end
-
+      TYPES = %w{
+           NoArgument
+           SignedByteArgument
+           SignedShortArgument
+           IndexedLocalVarArgument
+           ImplicitLocalVarArgument
+           TypeDescriptorArgument
+           FieldOrMethodInvocation
+           InvokeInterfaceOrDynamic
+           LabelOffset
+           LabelOffsetWide
+           LoadConstant
+           LoadConstantWide
+           IntegerIncrement
+           TableSwitch
+           LookupSwitch
+           MultiNewArray
+           Wide
+      }.map { |n| const_set(n, Module.new) }
+      
       NEWARRAY_TYPE = {
         4  => :boolean,
         5  => :char,
@@ -26,6 +32,21 @@ module Charm
         10 => :int,
         11 => :long
       }
+
+      OPCODES = []
+      NAMED = {}
+
+      def self.opcode(mnemonic, opcode)
+        op = new mnemonic, opcode
+        OPCODES[opcode] = op
+        NAMED[mnemonic] = op
+      end
+
+      attr_reader :mnemonic, :opcode
+
+      def initialize(mnemonic, opcode)
+        @mnemonic, @opcode = mnemonic, opcode
+      end
 
       opcode :nop, 0x00
 
@@ -399,7 +420,7 @@ module Charm
 
       opcode :invokeinterface, 0xb9
 
-      opcode :xxxunusedxxx1, 0xba
+      opcode :invokedynamic, 0xba
 
       opcode :new, 0xbb
 
@@ -436,6 +457,23 @@ module Charm
       opcode :impdep1, 0xfe
 
       opcode :impdep2, 0xff
+
+
+      # Extend each opcode with its opcode type.
+      tags = %q(
+        AAAAAAAAAAAAAAAABCKLLDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADD
+        DDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        AAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAIIIIIIIIIIIIIII
+        IDNOAAAAAAGGGGGGGHHFBFAAFFAAQPIIJJI
+      ).gsub(/\W/,'').split(//)
+      tags.each_with_index do |tag, opcode_index|
+        type_index = tag.bytes.first - 65
+        type = TYPES[type_index]
+        op = OPCODES[opcode_index]
+        op.extend type if op
+        #puts "#{tag} #{opcode_index} #{op.mnemonic} #{type.name}"
+      end
+      
     end
   end
 end
