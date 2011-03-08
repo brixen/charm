@@ -211,7 +211,7 @@ module Charm
           ip = 0
           while ip < code_length
             opcode = stream.read_u1
-            inst = OPCODES[opcode]
+            inst = OPCODES[opcode].new(ip)
             inst.wide! if Wide === iseq.last
             inst.load(stream)
             ip += inst.size + 1

@@ -38,16 +38,14 @@ module Charm
       NAMED = {}
 
       def self.opcode(mnemonic, opcode)
-        op = new mnemonic, opcode
+        op = Class.new(Opcode) do
+          define_method(:initialize) { |ip| @ip, @mnemonic, @opcode = ip, mnemonic, opcode }
+        end
         OPCODES[opcode] = op
         NAMED[mnemonic] = op
       end
 
       attr_reader :mnemonic, :opcode
-
-      def initialize(mnemonic, opcode)
-        @mnemonic, @opcode = mnemonic, opcode
-      end
 
       opcode :nop, 0x00
 
@@ -471,7 +469,7 @@ module Charm
         opcode = OPCODES[opcode_index]
         type = TYPES[type_index]
         raise "No such opcode or type" if opcode.nil? || type.nil?
-        opcode.extend type
+        opcode.send :include, type
       end
     end
   end
