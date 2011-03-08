@@ -28,7 +28,7 @@ module Charm
       end
 
       class Float < Constant
-        tag 3
+        tag 4
         u4 :bytes
       end
 
@@ -84,14 +84,14 @@ module Charm
         index = ctx.read :u2
         const = ctx.constant index
         raise "No such Attribute constant #{const}" unless const
-        name = const.bytes
+        name = Bytecode.utf8 const.bytes
         type = const_get(name) rescue Unknown
         length = ctx.read :u4
         type.new(length).load(ctx)
       end
 
       def initialize(length)
-        @attribute_length = length 
+        @attribute_length = length
       end
 
       class Unknown < Attribute
@@ -114,7 +114,9 @@ module Charm
       class Code < Attribute
         u2 :max_stack
         u2 :max_locals
-        un :code, :u4
+        un :code, :u4 do |code, ctx| 
+          Opcode::ISeq.load code.to_a
+        end
         a0 :exception_table, ExceptionEntry
         a0 :attributes, Attribute
       end
@@ -182,7 +184,8 @@ module Charm
 
     class ClassFile < Loader
       u4 :magic do |magic, ctx|
-        raise InvalidClassFile unless magic == 0xCAFE_BABE
+        raise InvalidClassFile unless magic == 0xCAFE_BABE 
+        magic
       end
       u2 :minor_version
       u2 :major_version
@@ -195,5 +198,158 @@ module Charm
       a0 :methods, Method
       a0 :attributes, Attribute
     end
+
+    class Opcode
+
+      class ISeq
+        def self.load(bytes)
+          iseq = []
+          stream = StreamReader::FromArray.new bytes
+          code_length = stream.size
+          ip = 0
+          while ip < code_length
+            opcode = stream.read_u1
+            inst = OPCODES[opcode]
+            inst.load(stream)
+            ip += inst.size + 1
+            iseq << inst
+          end
+          iseq
+        end
+      end
+
+      def load(stream)
+        raise "#load Not Implemented for opcode #{mnemonic} #{type}"
+      end
+
+      module NoArgument
+        def size
+          0
+        end
+        def load(stream)
+          # Nothing, this instruction takes no args.
+        end
+      end
+
+      module SignedByteArgument
+        def size
+          1
+        end
+
+        def load(stream)
+          @byte = stream.read_u1
+        end
+      end
+
+
+      module ImplicitLocalVarArgument
+        def size
+          0
+        end
+
+        def load(stream)
+          # Nothing, local variable is implicit.
+        end
+      end
+
+      module TypeDescriptorArgument
+        def size
+          2
+        end
+
+        def load(stream)
+          @index = stream.read_u2
+        end
+      end
+
+      module FieldOrMethodInvocation
+        def size
+          2 # 16ubits (an index from constant pool)
+        end
+
+        def load(stream)
+          @index = stream.read_u2
+        end
+      end
+
+      module InvokeInterfaceOrDynamic
+        def size
+          3
+        end
+        def load(stream)
+          @index = stream.read_u2
+          @arg_words = stream.read_u1
+        end
+      end
+
+      module LabelOffset
+        def size
+          2
+        end
+        def load(stream)
+          @offset = stream.read_u2
+        end
+      end
+
+      module LoadConstant
+        def size
+          1
+        end
+
+        def load(stream)
+          @index = stream.read_u1
+        end
+      end
+
+      module IntegerIncrement
+        def size
+          @size ||= 2
+        end
+
+        def wide!
+          @size = 4
+        end
+
+        def wide?
+          size > 2
+        end
+
+        def load(stream)
+          @index = wide? and stream.read_u2 or stream.read_u1
+          @increment = wide? and stream.read_s2 or stream.read_s1
+        end
+      end
+
+
+      module IndexedLocalVarArgument
+        def size
+          @size ||= 1
+        end
+
+        def wide!
+          @size = 2
+        end
+
+        def wide?
+          size > 1
+        end
+
+        def load(stream)
+          @index = wide? and stream.read_u2 or stream.read_u1
+        end
+      end
+
+      module LoadConstantWide
+        def size
+          2
+        end
+        def load(stream)
+          @index = stream.read_u2
+        end
+      end
+
+
+    end
+
   end
 end

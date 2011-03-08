@@ -21,7 +21,8 @@ module Charm
            MultiNewArray
            Wide
       }.map { |n| const_set(n, Module.new) }
-      
+
+
       NEWARRAY_TYPE = {
         4  => :boolean,
         5  => :char,
@@ -42,10 +43,15 @@ module Charm
         NAMED[mnemonic] = op
       end
 
-      attr_reader :mnemonic, :opcode
+      attr_reader :mnemonic, :opcode, :type
 
       def initialize(mnemonic, opcode)
         @mnemonic, @opcode = mnemonic, opcode
+      end
+
+      def type=(mod)
+        extend mod
+        @type = mod
       end
 
       opcode :nop, 0x00
@@ -468,12 +474,8 @@ module Charm
       ).gsub(/\W/,'').split(//)
       tags.each_with_index do |tag, opcode_index|
         type_index = tag.bytes.first - 65
-        type = TYPES[type_index]
-        op = OPCODES[opcode_index]
-        op.extend type if op
-        #puts "#{tag} #{opcode_index} #{op.mnemonic} #{type.name}"
+        OPCODES[opcode_index].type = TYPES[type_index]
       end
-      
     end
   end
 end
