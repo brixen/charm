@@ -19,7 +19,9 @@ module Charm
 
       class Utf8 < Constant
         tag 1
-        un :bytes
+        un :bytes do |bytes, ctx|
+           Bytecode.utf8(bytes)
+        end
       end
 
       class Integer < Constant
@@ -84,7 +86,7 @@ module Charm
         index = ctx.read :u2
         const = ctx.constant index
         raise "No such Attribute constant #{const}" unless const
-        name = Bytecode.utf8 const.bytes
+        name = const.bytes
         type = const_get(name) rescue Unknown
         length = ctx.read :u4
         type.new(length).load(ctx)
@@ -114,7 +116,7 @@ module Charm
       class Code < Attribute
         u2 :max_stack
         u2 :max_locals
-        un :code, :u4 do |code, ctx| 
+        un :code, :u4 do |code, ctx|
           Opcode::ISeq.load code.to_a
         end
         a0 :exception_table, ExceptionEntry
@@ -184,7 +186,7 @@ module Charm
 
     class ClassFile < Loader
       u4 :magic do |magic, ctx|
-        raise InvalidClassFile unless magic == 0xCAFE_BABE 
+        raise InvalidClassFile unless magic == 0xCAFE_BABE
         magic
       end
       u2 :minor_version
@@ -210,6 +212,7 @@ module Charm
           while ip < code_length
             opcode = stream.read_u1
             inst = OPCODES[opcode]
+            inst.wide! if Wide === iseq.last
             inst.load(stream)
             ip += inst.size + 1
             iseq << inst
@@ -291,15 +294,38 @@ module Charm
         end
       end
 
+      module WideLabelOffset
+        include LabelOffset
+        def size
+          wide!
+        end
+      end
+
       module LoadConstant
         def size
-          1
+          @size ||= 1
+        end
+
+        def wide!
+          @size = 2
+        end
+
+        def wide?
+          size > 1
         end
 
         def load(stream)
-          @index = stream.read_u1
+          @index = wide? and stream.read_u2 or stream.read_u1
         end
       end
+
+      module LoadWideConstant
+        include LoadConstant
+        def size
+          wide!
+        end
+      end
+
 
       module IntegerIncrement
         def size
@@ -338,16 +364,6 @@ module Charm
           @index = wide? and stream.read_u2 or stream.read_u1
         end
       end
-
-      module LoadConstantWide
-        def size
-          2
-        end
-        def load(stream)
-          @index = stream.read_u2
-        end
-      end
-
 
     end
 

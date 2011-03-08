@@ -12,9 +12,9 @@ module Charm
            FieldOrMethodInvocation
            InvokeInterfaceOrDynamic
            LabelOffset
-           LabelOffsetWide
+           WideLabelOffset
            LoadConstant
-           LoadConstantWide
+           LoadWideConstant
            IntegerIncrement
            TableSwitch
            LookupSwitch
@@ -43,15 +43,10 @@ module Charm
         NAMED[mnemonic] = op
       end
 
-      attr_reader :mnemonic, :opcode, :type
+      attr_reader :mnemonic, :opcode
 
       def initialize(mnemonic, opcode)
         @mnemonic, @opcode = mnemonic, opcode
-      end
-
-      def type=(mod)
-        extend mod
-        @type = mod
       end
 
       opcode :nop, 0x00
@@ -466,15 +461,17 @@ module Charm
 
 
       # Extend each opcode with its opcode type.
-      tags = %q(
+      %q(
         AAAAAAAAAAAAAAAABCKLLDDDDDEEEEEEEEEEEEEEEEEEEEAAAAAAAADD
         DDDEEEEEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
         AAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAIIIIIIIIIIIIIII
         IDNOAAAAAAGGGGGGGHHFBFAAFFAAQPIIJJI
-      ).gsub(/\W/,'').split(//)
-      tags.each_with_index do |tag, opcode_index|
-        type_index = tag.bytes.first - 65
-        OPCODES[opcode_index].type = TYPES[type_index]
+      ).gsub(/\W/,'').bytes.each_with_index do |tag, opcode_index|
+        type_index = tag - 65
+        opcode = OPCODES[opcode_index]
+        type = TYPES[type_index]
+        raise "No such opcode or type" if opcode.nil? || type.nil?
+        opcode.extend type
       end
     end
   end
