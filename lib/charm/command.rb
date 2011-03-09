@@ -25,18 +25,29 @@ module Charm
 
     def self.help
       puts 'Usage:'
-      puts '  <command> <options> <argv>'
+      puts '  <command> <options> <class> <argv>'
+      puts ''
+      puts 'All commands take the -classpath option. As expected the default'
+      puts 'classpath is $PWD, or taken from the CLASSPATH environment var.'
+      puts ''
+      puts '<class> should be a fully qualified name. Charm supports reading'
+      puts 'from jar files, but you need to have the rubyzip gem installed,'
+      puts 'and rubygems loaded.'
       puts ''
       puts 'COMMANDS:'
       puts ''
       puts '   java      (default)'
       puts '             Execute the given class main method.'
       puts ''
-      puts '   javap     Print a class file structure'
+      puts '   javax     Compile a class file to rbx bytecode'
       puts ''
-      puts '   sexp      Print a class file as sexp'
+      puts '   javap     Print a class file structure (inspect java opcodes)'
       puts ''
-      puts '   yaml      Print a class file as yaml'
+      puts '   source    Print a class file Java source (disassembly)'
+      puts ''
+      puts '   sexp      Print a class file as sexp (for debugging)'
+      puts ''
+      puts '   yaml      Print a class file as yaml (for debugging)'
       exit 0
     end
 
