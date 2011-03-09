@@ -40,8 +40,7 @@ module Charm
                     :volatile, :transient
 
       def access_modifiers
-        [@public, @private, @protected,
-         static, final, volatile, transient].compact
+        [@public, @private, @protected, static, final, volatile, transient].compact
       end
     end
 
@@ -67,6 +66,9 @@ module Charm
     end
 
     class ReturnIns < Struct.new(:ip, :mnemonic, :type)
+    end
+
+    class InstantiateIns < Struct.new(:ip, :mnemonic, :type)
     end
 
   end

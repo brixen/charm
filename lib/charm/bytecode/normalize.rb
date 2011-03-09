@@ -78,6 +78,7 @@ module Charm
           when /^V/ then :void
           when /^Z/ then :boolean
           when /^L/ then desc[1...-1].gsub('/', '.')
+          when /\// then desc.gsub('/', '.')
           else raise "Invalid type descriptor #{desc}"
         end
         new type, dimension
@@ -201,7 +202,13 @@ module Charm
         def normalize(cf)
           AST::Code.new.tap do |code|
             code.locals = []
-            code.iseq = instructions.map { |i| i.normalize(cf, code) }
+            code.iseq = instructions.map { |i|
+              begin
+                i.normalize(cf, code)
+              rescue NoMethodError
+                raise "Not implemented normalize #{i.mnemonic} #{i.class.ancestors.inspect}"
+              end
+            }
           end
         end
       end
@@ -213,8 +220,7 @@ module Charm
             idx = @opcode - 42
             type = Type.from_code @mnemonic
             AST::LoadLocalVariableIns.new @ip, @mnemonic, code.local(idx, type)
-          else
-            raise "Not implemented"
+          else raise "Normalize not implemented #{@mnemonic}"
           end
         end
       end
@@ -241,7 +247,7 @@ module Charm
         def normalize(cf, code)
           case @mnemonic
           when :return then AST::ReturnIns.new @ip, @mnemonic, Type.from_desc('V')
-          else raise "Not Implemented"
+          else raise "Normalize not implemented #{@mnemonic}"
           end
         end
       end
@@ -254,9 +260,19 @@ module Charm
             type = Type.from_desc "Ljava.lang.String;"
             const = cf[target.string_index].bytes
             AST::LoadConstantIns.new @ip, @mnemonic, const, type
-          else
-            raise "Unknown type of constant #{target}"
+          else raise "Unknown type of constant #{@mnemonic} #{target}"
           end
+        end
+      end
+
+      module TypeDescriptorArgument
+        def normalize(cf, code)
+          type =  Type.from_desc cf[cf[@index].name_index].bytes
+          case @mnemonic
+          when :new then AST::InstantiateIns.new @ip, @mnemonic, type
+          else raise "normalize not implemented #{@mnemonic}"
+          end
+          self
         end
       end
 
