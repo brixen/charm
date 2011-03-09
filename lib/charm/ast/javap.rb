@@ -58,7 +58,7 @@ module Charm
 
       module FieldOrMethodInvocation
         def javap(pr)
-          pr << '#' << @ip << ' ' << @mnemonic.to_s << ' // '
+          pr << '#' << @ip << ' ' << ("%-18s" % [@mnemonic]) << ' '
           pr << @class_name << '.' << @member_name
           if @mnemonic.to_s =~ /invoke/
             pr << '('
