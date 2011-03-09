@@ -24,7 +24,7 @@ module Charm
       end
 
       def utf8(index)
-        Bytecode.utf8 self[index].bytes
+        self[index].bytes
       end
 
       def public?
@@ -145,7 +145,7 @@ module Charm
           m.parameter_types = types
           m.name = cf.name if m.name == "<init>"
           m.name = nil if m.name == "<clinit>"
-
+          m.iseq = attributes.find { |a| Attribute::Code === a }.code
         end
       end
 

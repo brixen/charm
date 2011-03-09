@@ -20,7 +20,7 @@ module Charm
     end
 
     class Method
-      attr_accessor :name,
+      attr_accessor :name, :iseq,
                     :return_type, :parameter_types,
                     :public, :private, :protected,
                     :abstract, :final, :static,

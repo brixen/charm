@@ -42,6 +42,12 @@ module Charm
           pr << ';'
         else
           pr << ' {'
+          pr.nl! do |np|
+            iseq.instructions.each do |ins|
+              np << "#" << ins.ip  << " " << ins.mnemonic
+              np << np.nl
+            end
+          end
           pr.nl! << '}'
         end
         pr.nl

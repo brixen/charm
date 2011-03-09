@@ -45,7 +45,7 @@ module Charm
         NAMED[mnemonic] = op
       end
 
-      attr_reader :mnemonic, :opcode
+      attr_reader :mnemonic, :opcode, :ip
 
       opcode :nop, 0x00
 

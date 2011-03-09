@@ -205,19 +205,34 @@ module Charm
 
       class ISeq
         def self.load(bytes)
-          iseq = []
+          iseq = new
           stream = StreamReader::FromArray.new bytes
           code_length = stream.size
           ip = 0
           while ip < code_length
             opcode = stream.read_u1
             inst = OPCODES[opcode].new(ip)
-            inst.wide! if Wide === iseq.last
+            inst.wide! if iseq.wide?
             inst.load(stream)
             ip += inst.size + 1
             iseq << inst
           end
           iseq
+        end
+
+        def initialize
+          @instructions = []
+        end
+
+        attr_reader :instructions
+
+        def <<(instruction)
+          instructions << instruction
+          self
+        end
+
+        def wide?
+          Wide === instructions.last
         end
       end
 
