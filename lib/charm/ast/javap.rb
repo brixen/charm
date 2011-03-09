@@ -42,46 +42,47 @@ module Charm
           pr << ';'
         else
           pr << ' {'
-          pr.nl! { |np| iseq.instructions.each { |ins| ins.javap(np); np.nl! }}
+          pr.nl! { |np| code.iseq.each { |ins| ins.javap(np); np.nl! }}
           pr.nl! << '}'
         end
         pr.nl
       end
     end
 
-    class Bytecode::Opcode
-      module ImplicitLocalVarArgument
-        def javap(pr)
-          pr << '#' << @ip << ' ' << @mnemonic.to_s
-        end
-      end
-
-      module FieldOrMethodInvocation
-        def javap(pr)
-          pr << '#' << @ip << ' ' << ("%-18s" % [@mnemonic]) << ' '
-          pr << @class_name << '.' << @member_name
-          if @mnemonic.to_s =~ /invoke/
-            pr << '('
-            pr << @member_type[1..-1].map(&:signature).join(', ')
-            pr << '):' << @member_type.first.signature
-          else
-            pr << ':' << @member_type.signature
-          end
-        end
-      end
-
-      module LoadConstant
-        def javap(pr)
-          pr << '#' << @ip << ' ' << ("%-18s" % [@mnemonic]) << ' '
-          pr << @type.signature << ' ' << @const.inspect
-        end
-      end
-
-      module NoArgument
-        def javap(pr)
-          pr << '#' << @ip << ' ' << @mnemonic.to_s
-        end
+    class LoadLocalVariableIns
+      def javap(pr) 
+          pr << '#' << ip << ' ' << mnemonic.to_s
       end
     end
+
+    class FieldAccessIns
+      def javap(pr)
+          pr << '#' << ip << ' ' << ('%-18s' % [mnemonic]) << ' '
+          pr << owner << '.' << name << ':' << type.signature
+      end
+    end
+
+    class MethodInvocationIns
+      def javap(pr)
+          pr << '#' << ip << ' ' << ('%-18s' % [mnemonic]) << ' '
+          pr << owner << '.' << name << '('
+          pr << type[1..-1].map { |t| t.signature }.join(', ')
+          pr << '):' << type.first.signature
+      end
+    end
+
+    class LoadConstantIns
+      def javap(pr)
+          pr << '#' << ip << ' ' << ('%-18s' % [mnemonic]) << ' '
+          pr << type.signature << ' ' << constant
+      end
+    end
+
+    class ReturnIns
+      def javap(pr)
+          pr << '#' << ip << ' ' << mnemonic.to_s
+      end
+    end
+
   end
 end

@@ -20,7 +20,7 @@ module Charm
     end
 
     class Method
-      attr_accessor :name, :iseq,
+      attr_accessor :name, :code,
                     :return_type, :parameter_types,
                     :public, :private, :protected,
                     :abstract, :final, :static,
@@ -43,6 +43,30 @@ module Charm
         [@public, @private, @protected,
          static, final, volatile, transient].compact
       end
+    end
+
+    class Local < Struct.new(:index, :type)
+    end
+
+    class Code < Struct.new(:iseq, :locals)
+      def local(index, type)
+        locals[index] ||= Local.new.tap { |l| l.index, l.type = index, type }
+      end
+    end
+
+    class LoadConstantIns < Struct.new(:ip, :mnemonic, :constant, :type)
+    end
+
+    class LoadLocalVariableIns < Struct.new(:ip, :mnemonic, :local)
+    end
+
+    class MethodInvocationIns < Struct.new(:ip, :mnemonic, :owner, :name, :type)
+    end
+
+    class FieldAccessIns < Struct.new(:ip, :mnemonic, :owner, :name, :type)
+    end
+
+    class ReturnIns < Struct.new(:ip, :mnemonic, :type)
     end
 
   end

@@ -57,7 +57,7 @@ module Charm
       end
     end
 
-    class Type
+    class Type < Struct.new(:name, :dimension)
       def self.from_method_desc(desc)
         m = /\((.*)\)(.*)/.match desc
         types = [m[2]] + m[1].scan(/(\[*L[^;]+;|\[*[BCDFIJSVZ])/)
@@ -80,10 +80,20 @@ module Charm
           when /^L/ then desc[1...-1].gsub('/', '.')
           else raise "Invalid type descriptor #{desc}"
         end
-        new.tap { |t| t.name = type; t.dimension = dimension }
+        new type, dimension
       end
 
-      attr_accessor :name, :dimension
+      def self.from_code(code)
+        case code.to_s[0,1]
+        when 'a' then from_desc 'Ljava.lang.Object;'
+        when 'i' then from_desc :int
+        when 'l' then from_desc :long
+        when 'd' then from_desc :double
+        when 'b' then from_desc :byte
+        when 'c' then from_desc :char
+        else raise "Invalid type descriptor: #{code}"
+        end
+      end
 
       def signature
         name.to_s + ("[]" * dimension)
@@ -144,7 +154,7 @@ module Charm
           m.parameter_types = types
           m.name = cf.name if m.name == "<init>"
           m.name = nil if m.name == "<clinit>"
-          m.iseq = attributes.find { |a| Attribute::Code === a }.iseq.normalize(cf)
+          m.code = attributes.find { |a| Attribute::Code === a }.iseq.normalize(cf)
         end
       end
 
@@ -189,60 +199,64 @@ module Charm
     class Opcode
       class ISeq
         def normalize(cf)
-          ins = instructions.map { |i|
-            begin
-              i.normalize(cf) 
-            rescue => e 
-              puts "Error normalizing #{i.class.ancestors.inspect}"
-              raise e
-            end
-          }
-          self
+          AST::Code.new.tap do |code|
+            code.locals = []
+            code.iseq = instructions.map { |i| i.normalize(cf, code) }
+          end
         end
       end
 
       module ImplicitLocalVarArgument
-        def normalize(cf)
-          @var_idx = @opcode - 42
-          self
+        def normalize(cf, code)
+          case @mnemonic.to_s
+          when /\wload/
+            idx = @opcode - 42
+            type = Type.from_code @mnemonic
+            AST::LoadLocalVariableIns.new @ip, @mnemonic, code.local(idx, type)
+          else
+            raise "Not implemented"
+          end
         end
       end
 
       module FieldOrMethodInvocation
-        def normalize(cf)
+        def normalize(cf, code)
+          ivk = @mnemonic.to_s =~ /invoke/
           ref = cf[@index]
           clazz = cf[ref.class_index]
           name_and_type = cf[ref.name_and_type_index]
-          @class_name = cf[clazz.name_index].bytes.gsub('/', '.')
-          @member_name = cf[name_and_type.name_index].bytes
+          class_name = cf[clazz.name_index].bytes.gsub('/', '.')
+          member_name = cf[name_and_type.name_index].bytes
           member_desc = cf[name_and_type.descriptor_index].bytes
-          if @mnemonic.to_s =~ /invoke/
-            @member_type = Type.from_method_desc member_desc
-          else
-            @member_type = Type.from_desc member_desc
-          end
-          self
+          member_cls = AST.const_get(ivk && :MethodInvocationIns || :FieldAccessIns)
+          member = member_cls.new(@ip, @mnemonic)
+          member.owner = class_name
+          member.name = member_name
+          member.type = Type.send(ivk && :from_method_desc || :from_desc, member_desc) 
+          member
         end
       end
 
       module NoArgument
-        def normalize(cf)
-          @mnemonic == :return
-          self
+        def normalize(cf, code)
+          case @mnemonic
+          when :return then AST::ReturnIns.new @ip, @mnemonic, Type.from_desc('V')
+          else raise "Not Implemented"
+          end
         end
       end
 
       module LoadConstant
-        def normalize(cf)
+        def normalize(cf, code)
           target = cf[@index]
-          @type = case target
-                  when Constant::String
-                    @const = cf[target.string_index].bytes
-                    Type.from_desc "Ljava.lang.String;"
-                  else
-                    raise "Unknown type of constant #{target}"
-                  end
-          self
+          case target
+          when Constant::String
+            type = Type.from_desc "Ljava.lang.String;"
+            const = cf[target.string_index].bytes
+            AST::LoadConstantIns.new @ip, @mnemonic, const, type
+          else
+            raise "Unknown type of constant #{target}"
+          end
         end
       end
 
