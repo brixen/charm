@@ -213,17 +213,14 @@ module Charm
           ref = cf[@index]
           clazz = cf[ref.class_index]
           name_and_type = cf[ref.name_and_type_index]
-          class_name = cf[clazz.name_index].bytes.gsub('/', '.')
-          member_name = cf[name_and_type.name_index].bytes
-          member_type = cf[name_and_type.descriptor_index].bytes
+          @class_name = cf[clazz.name_index].bytes.gsub('/', '.')
+          @member_name = cf[name_and_type.name_index].bytes
+          member_desc = cf[name_and_type.descriptor_index].bytes
           if @mnemonic.to_s =~ /invoke/
-            type = Type.from_method_desc member_type
+            @member_type = Type.from_method_desc member_desc
           else
-            type = Type.from_desc member_type
+            @member_type = Type.from_desc member_desc
           end
-          @class_name = class_name
-          @member_name = member_name
-          @member_type = type
           self
         end
       end
