@@ -238,6 +238,13 @@ module Charm
       module LoadConstant
         def normalize(cf)
           target = cf[@index]
+          @type = case target
+                  when Constant::String
+                    @const = cf[target.string_index].bytes
+                    Type.from_desc "Ljava.lang.String;"
+                  else
+                    raise "Unknown type of constant #{target}"
+                  end
           self
         end
       end

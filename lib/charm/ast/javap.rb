@@ -72,11 +72,14 @@ module Charm
 
       module LoadConstant
         def javap(pr)
+          pr << '#' << @ip << ' ' << ("%-18s" % [@mnemonic]) << ' '
+          pr << @type.signature << ' ' << @const.inspect
         end
       end
 
       module NoArgument
         def javap(pr)
+          pr << '#' << @ip << ' ' << @mnemonic.to_s
         end
       end
     end
