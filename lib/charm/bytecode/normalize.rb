@@ -140,12 +140,11 @@ module Charm
            each { |am| m.send("#{am}=", am) if send("#{am}?") }
           types = Type.from_method_desc cf.utf8(descriptor_index)
           m.return_type = types.shift
-          m.return_type = nil if m.name == "<init>"
-          m.return_type = nil if m.name == "<clinit>"
+          m.return_type = nil if m.name == "<init>" || m.name == "<clinit>"
           m.parameter_types = types
           m.name = cf.name if m.name == "<init>"
           m.name = nil if m.name == "<clinit>"
-          m.iseq = attributes.find { |a| Attribute::Code === a }.code
+          m.iseq = attributes.find { |a| Attribute::Code === a }.iseq.normalize(cf)
         end
       end
 
@@ -186,5 +185,64 @@ module Charm
       end
 
     end
+
+    class Opcode
+      class ISeq
+        def normalize(cf)
+          ins = instructions.map { |i|
+            begin
+              i.normalize(cf) 
+            rescue => e 
+              puts "Error normalizing #{i.class.ancestors.inspect}"
+              raise e
+            end
+          }
+          self
+        end
+      end
+
+      module ImplicitLocalVarArgument
+        def normalize(cf)
+          @var_idx = @opcode - 42
+          self
+        end
+      end
+
+      module FieldOrMethodInvocation
+        def normalize(cf)
+          ref = cf[@index]
+          clazz = cf[ref.class_index]
+          name_and_type = cf[ref.name_and_type_index]
+          class_name = cf[clazz.name_index].bytes.gsub('/', '.')
+          member_name = cf[name_and_type.name_index].bytes
+          member_type = cf[name_and_type.descriptor_index].bytes
+          if @mnemonic.to_s =~ /invoke/
+            type = Type.from_method_desc member_type
+          else
+            type = Type.from_desc member_type
+          end
+          @class_name = class_name
+          @member_name = member_name
+          @member_type = type
+          self
+        end
+      end
+
+      module NoArgument
+        def normalize(cf)
+          @mnemonic == :return
+          self
+        end
+      end
+
+      module LoadConstant
+        def normalize(cf)
+          target = cf[@index]
+          self
+        end
+      end
+
+    end
+
   end
 end

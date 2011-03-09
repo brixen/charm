@@ -79,7 +79,9 @@ module Charm
       end
 
       def self.run(argv = ARGV.dup)
-        load(argv).each { |cls| cls.normalize.javap(AST::Printer.new(STDOUT)); puts }
+        out = AST::Printer.new
+        load(argv).each { |cls| cls.normalize.javap(out); out.nl! }
+        puts out
       end
     end
 

@@ -42,15 +42,42 @@ module Charm
           pr << ';'
         else
           pr << ' {'
-          pr.nl! do |np|
-            iseq.instructions.each do |ins|
-              np << "#" << ins.ip  << " " << ins.mnemonic
-              np << np.nl
-            end
-          end
+          pr.nl! { |np| iseq.instructions.each { |ins| ins.javap(np); np.nl! }}
           pr.nl! << '}'
         end
         pr.nl
+      end
+    end
+
+    class Bytecode::Opcode
+      module ImplicitLocalVarArgument
+        def javap(pr)
+          pr << '#' << @ip << ' ' << @mnemonic.to_s
+        end
+      end
+
+      module FieldOrMethodInvocation
+        def javap(pr)
+          pr << '#' << @ip << ' ' << @mnemonic.to_s << ' // '
+          pr << @class_name << '.' << @member_name
+          if @mnemonic.to_s =~ /invoke/
+            pr << '('
+            pr << @member_type[1..-1].map(&:signature).join(', ')
+            pr << '):' << @member_type.first.signature
+          else
+            pr << ':' << @member_type.signature
+          end
+        end
+      end
+
+      module LoadConstant
+        def javap(pr)
+        end
+      end
+
+      module NoArgument
+        def javap(pr)
+        end
       end
     end
   end

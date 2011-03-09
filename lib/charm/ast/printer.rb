@@ -1,11 +1,26 @@
 module Charm
   module AST
     class Printer
-      def initialize(output = "", indent = 0)
+      class LineBreak
+        def initialize(level)
+          @level = level
+        end
+        
+        def to_s
+          "\n" + (" " * @level * 4)
+        end
+      end
+
+      def initialize(output = [], indent = 0)
         @output, @indent = output, indent
       end
 
+      def to_s
+        @output.compact.join
+      end
+
       def <<(str)
+        @output.pop if LineBreak === str && LineBreak === @output.last
         @output << str
         self
       end
@@ -13,21 +28,18 @@ module Charm
       def nl!
         if block_given?
           np = self.class.new(@output, @indent + 1)
-          @output << np.nl
+          self << np.nl
           yield np
         else
-          @output << nl
+          self << nl
         end
         self
       end
 
       def nl
-        "\n" << indent
+        LineBreak.new @indent
       end
 
-      def indent
-        ' ' * (@indent * 4)
-      end
     end
   end
 end

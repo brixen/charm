@@ -116,7 +116,7 @@ module Charm
       class Code < Attribute
         u2 :max_stack
         u2 :max_locals
-        un :code, :u4 do |code, ctx|
+        un :iseq, :u4 do |code, ctx|
           Opcode::ISeq.load code.to_a
         end
         a0 :exception_table, ExceptionEntry
@@ -330,7 +330,7 @@ module Charm
         end
 
         def load(stream)
-          @index = wide? and stream.read_u2 or stream.read_u1
+          @index = wide? && stream.read_u2 || stream.read_u1
         end
       end
 
@@ -356,8 +356,8 @@ module Charm
         end
 
         def load(stream)
-          @index = wide? and stream.read_u2 or stream.read_u1
-          @increment = wide? and stream.read_s2 or stream.read_s1
+          @index = wide? && stream.read_u2 || stream.read_u1
+          @increment = wide? && stream.read_s2 || stream.read_s1
         end
       end
 
@@ -376,7 +376,7 @@ module Charm
         end
 
         def load(stream)
-          @index = wide? and stream.read_u2 or stream.read_u1
+          @index = wide? && stream.read_u2 || stream.read_u1
         end
       end
 
