@@ -292,11 +292,12 @@ module Charm
 
       module InvokeInterfaceOrDynamic
         def size
-          3
+          4
         end
         def load(stream)
           @index = stream.read_u2
           @arg_words = stream.read_u1
+          stream.read_u1 # The leading 0
         end
       end
 

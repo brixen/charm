@@ -3,7 +3,7 @@ module Charm
     class Class
 
       def javap(pr)
-        pr << 'package ' << package.join('.') << ';' << pr.nl unless 
+        pr << 'package ' << package.join('.') << ';' << pr.nl unless
            package.empty?
         pr << '/** Compiled from ' << source_file << ' **/' << pr.nl
         pr << access_modifiers.join(' ') << ' ' unless
@@ -23,7 +23,7 @@ module Charm
 
     class Field
       def javap(pr)
-        pr << access_modifiers.join(' ') << ' ' unless 
+        pr << access_modifiers.join(' ') << ' ' unless
           access_modifiers.empty?
         pr << type.signature << ' ' << name << ';'
       end
@@ -49,22 +49,31 @@ module Charm
       end
     end
 
-    class LoadLocalVariableIns
-      def javap(pr) 
-          pr << '#' << ip << ' ' << mnemonic.to_s
+    module JavapIpOpcode
+      def ip_opcode
+        '#%-4i %-18s' % [ip, mnemonic]
+      end
+
+      def javap(pr)
+          pr << ip_opcode
       end
     end
 
+    class LoadLocalVariableIns
+      include JavapIpOpcode
+    end
+
     class FieldAccessIns
+      include JavapIpOpcode
       def javap(pr)
-          pr << '#' << ip << ' ' << ('%-18s' % [mnemonic]) << ' '
-          pr << owner << '.' << name << ':' << type.signature
+          pr << ip_opcode << ' ' << owner << '.' << name << ':' << type.signature
       end
     end
 
     class MethodInvocationIns
+      include JavapIpOpcode
       def javap(pr)
-          pr << '#' << ip << ' ' << ('%-18s' % [mnemonic]) << ' '
+          pr << ip_opcode
           pr << owner << '.' << name << '('
           pr << type[1..-1].map { |t| t.signature }.join(', ')
           pr << '):' << type.first.signature
@@ -72,16 +81,55 @@ module Charm
     end
 
     class LoadConstantIns
+      include JavapIpOpcode
       def javap(pr)
-          pr << '#' << ip << ' ' << ('%-18s' % [mnemonic]) << ' '
+          pr << ip_opcode
           pr << type.signature << ' ' << constant
       end
     end
 
     class ReturnIns
-      def javap(pr)
-          pr << '#' << ip << ' ' << mnemonic.to_s
-      end
+      include JavapIpOpcode
+    end
+
+    class IncrementLocalIns
+      include JavapIpOpcode
+    end
+
+    class StoreLocalVariableIns
+      include JavapIpOpcode
+    end
+
+    class LoadArrayItemIns
+      include JavapIpOpcode
+    end
+
+    class StoreArrayItemIns
+      include JavapIpOpcode
+    end
+
+    class DupIns
+      include JavapIpOpcode
+    end
+
+    class InterfaceInvocationIns
+      include JavapIpOpcode
+    end
+
+    class NewIns
+      include JavapIpOpcode
+    end
+
+    class JumpIns
+      include JavapIpOpcode
+    end
+
+    class PopIns
+      include JavapIpOpcode
+    end
+
+    class NoopIns
+      include JavapIpOpcode
     end
 
   end

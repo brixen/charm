@@ -48,18 +48,33 @@ module Charm
     end
 
     class Code < Struct.new(:iseq, :locals)
-      def local(index, type)
-        locals[index] ||= Local.new.tap { |l| l.index, l.type = index, type }
+      def local(index, type = nil)
+        locals[index] ||= Local.new index, type
       end
     end
 
     class LoadConstantIns < Struct.new(:ip, :mnemonic, :constant, :type)
     end
 
+    class IncrementLocalIns < Struct.new(:ip, :mnemonic, :local, :increment)
+    end
+
     class LoadLocalVariableIns < Struct.new(:ip, :mnemonic, :local)
     end
 
+    class StoreLocalVariableIns < Struct.new(:ip, :mnemonic, :local)
+    end
+
+    class LoadArrayItemIns < Struct.new(:ip, :mnemonic, :type)
+    end
+
+    class StoreArrayItemIns < Struct.new(:ip, :mnemonic, :type)
+    end
+
     class MethodInvocationIns < Struct.new(:ip, :mnemonic, :owner, :name, :type)
+    end
+
+    class InterfaceInvocationIns < Struct.new(:ip, :mnemonic, :owner, :name, :type, :args)
     end
 
     class FieldAccessIns < Struct.new(:ip, :mnemonic, :owner, :name, :type)
@@ -68,7 +83,19 @@ module Charm
     class ReturnIns < Struct.new(:ip, :mnemonic, :type)
     end
 
-    class InstantiateIns < Struct.new(:ip, :mnemonic, :type)
+    class DupIns < Struct.new(:ip, :mnemonic)
+    end
+
+    class NewIns < Struct.new(:ip, :mnemonic, :type)
+    end
+
+    class JumpIns < Struct.new(:ip, :mnemonic, :target, :condition, :type)
+    end
+
+    class PopIns < Struct.new(:ip, :mnemonic, :wide)
+    end
+
+    class NoopIns < Struct.new(:ip, :mnemonic)
     end
 
   end

@@ -85,15 +85,16 @@ module Charm
       end
 
       def self.from_code(code)
-        case code.to_s[0,1]
-        when 'a' then from_desc 'Ljava.lang.Object;'
-        when 'i' then from_desc :int
-        when 'l' then from_desc :long
-        when 'd' then from_desc :double
-        when 'b' then from_desc :byte
-        when 'c' then from_desc :char
-        else raise "Invalid type descriptor: #{code}"
-        end
+        type = case code.to_s[0,1]
+               when 'a' then 'Ljava.lang.Object;'
+               when 'i' then :int
+               when 'l' then :long
+               when 'd' then :double
+               when 'b' then :byte
+               when 'c' then :char
+               else raise "Invalid type descriptor: #{code}"
+               end
+        new type, 0
       end
 
       def signature
@@ -216,11 +217,11 @@ module Charm
       module ImplicitLocalVarArgument
         def normalize(cf, code)
           case @mnemonic.to_s
-          when /\wload/
-            idx = @opcode - 42
-            type = Type.from_code @mnemonic
-            AST::LoadLocalVariableIns.new @ip, @mnemonic, code.local(idx, type)
-          else raise "Normalize not implemented #{@mnemonic}"
+          when /(\w)(load|store)_(\d)/ then
+            type, oper, idx = Type.from_code($1), $2, $3.to_i
+            cls = AST.const_get("#{oper.capitalize}LocalVariableIns")
+            cls.new @ip, @mnemonic, code.local(idx, type)
+          else raise "Normalize not implemented #{@mnemonic} #{self.class.ancestors.inspect}"
           end
         end
       end
@@ -238,17 +239,29 @@ module Charm
           member = member_cls.new(@ip, @mnemonic)
           member.owner = class_name
           member.name = member_name
-          member.type = Type.send(ivk && :from_method_desc || :from_desc, member_desc) 
+          member.type = Type.send(ivk && :from_method_desc || :from_desc, member_desc)
           member
         end
       end
 
       module NoArgument
         def normalize(cf, code)
-          case @mnemonic
-          when :return then AST::ReturnIns.new @ip, @mnemonic, Type.from_desc('V')
-          else raise "Normalize not implemented #{@mnemonic}"
+          case @mnemonic.to_s
+          when 'return' then AST::ReturnIns.new @ip, @mnemonic, Type.from_desc('V')
+          when 'dup' then AST::DupIns.new @ip, @mnemonic
+          when 'pop' then AST::PopIns.new @ip, @mnemonic
+          when 'pop2' then AST::PopIns.new @ip, @mnemonic, :wide
+          when 'nop' then AST::NoopIns.new @ip, @mnemonic
+          when /(\w)const_(\d)/ then
+            AST::LoadConstantIns.new @ip, @mnemonic, $2.to_i, Type.from_code($1)
+          when /(\w)a(load|store)/ then
+            type, oper = Type.from_code($1), $2
+            AST::const_get("#{oper.capitalize}ArrayItemIns").new @ip, @mnemonic, type
+          else raise "Normalize not implemented #{@mnemonic} #{self.class.ancestors.inspect}"
           end
+        rescue => e
+          puts e
+          raise e
         end
       end
 
@@ -268,11 +281,43 @@ module Charm
       module TypeDescriptorArgument
         def normalize(cf, code)
           type =  Type.from_desc cf[cf[@index].name_index].bytes
-          case @mnemonic
-          when :new then AST::InstantiateIns.new @ip, @mnemonic, type
+          case @mnemonic.to_s
+          when 'new' then AST::NewIns.new @ip, @mnemonic, type
           else raise "normalize not implemented #{@mnemonic}"
           end
-          self
+        end
+      end
+
+      module LabelOffset
+        def normalize(cf, code)
+          case @mnemonic.to_s
+          when /if_(\w)cmp(\w+)/ then
+            type, oper = Type.from_code($1), $2.to_sym
+            AST::JumpIns.new @ip, @mnemonic, @offset, oper, type
+          when 'goto' then
+            AST::JumpIns.new @ip, @mnemonic, @offset
+          else raise "Normalize not implemented #{@mnemonic} #{self.class.ancestors.inspect}"
+          end
+        end
+      end
+
+      module InvokeInterfaceOrDynamic
+        def normalize(cf, code)
+          ref = cf[@index]
+          clazz = cf[ref.class_index]
+          name_and_type = cf[ref.name_and_type_index]
+          class_name = cf[clazz.name_index].bytes.gsub('/', '.')
+          member_name = cf[name_and_type.name_index].bytes
+          member_desc = cf[name_and_type.descriptor_index].bytes
+          member_type = Type.from_method_desc member_desc
+          AST::InterfaceInvocationIns.new @ip, @mnemonic, class_name,
+            member_name, member_type, @arg_words
+        end
+      end
+
+      module IntegerIncrement
+        def normalize(cf, code)
+          AST::IncrementLocalIns.new @ip, @mnemonic, code.local(@index), @increment
         end
       end
 
