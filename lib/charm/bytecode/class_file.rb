@@ -185,6 +185,12 @@ module Charm
     end
 
     class ClassFile < Loader
+      attr_reader :resource
+
+      def initialize(resource)
+        @resource = resource
+      end
+
       u4 :magic do |magic, ctx|
         raise InvalidClassFile unless magic == 0xCAFE_BABE
         magic

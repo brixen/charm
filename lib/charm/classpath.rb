@@ -31,13 +31,25 @@ module Charm
       end
 
       def open_stream(&block)
-        if m = /^jar:file:\/\/(.*)!\/(.*)/.match(@location)
+        if m = jared_file?
           Zip::ZipFile.new(m[1]).get_input_stream(m[2], &block)
-        elsif m = /^file:\/\/(.*)/.match(@location)
+        elsif m = file?
           File.open(m[1], "rb", &block)
         else
           raise "Dont know how to open resource #{@location}"
         end
+      end
+
+      def jared_file?
+        /^jar:file:\/\/(.*)!\/(.*)/.match(@location)
+      end
+
+      def file?
+        /^file:\/\/(.*)/.match(@location)
+      end
+
+      def to_s
+        @location
       end
     end
   end

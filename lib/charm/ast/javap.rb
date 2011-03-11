@@ -1,15 +1,47 @@
 module Charm
   module AST
+    class Type
+      attr_reader :dimension, :parameters, :package, :simple_name
+
+      def initialize(name, dimension = nil)
+        @dimension = dimension || 0
+        @parameters = []
+        if Symbol === name
+          @name = name
+        else
+          parts = name.split('.')
+          @package = parts[0...-1]
+          @parent = parts.last.split('$')
+          @simple_name = @parent.pop
+        end
+      end
+
+      def name
+        @name || [@package, [@parent, @simple_name].flatten.join('$')].flatten.join('.')
+      end
+
+      def primitive?
+        Symbol === name
+      end
+
+      def ary?
+        dimension > 0
+      end
+
+      def signature
+        name.to_s + ("[]" * dimension)
+      end
+    end
+
     class Class
 
       def javap(pr)
-        pr << 'package ' << package.join('.') << ';' << pr.nl unless
-           package.empty?
+        pr << 'package ' << type.package << ';' << pr.nl unless type.package
         pr << '/** Compiled from ' << source_file << ' **/' << pr.nl
         pr << access_modifiers.join(' ') << ' ' unless
           access_modifiers.empty?
         pr << (interface and 'interface' or 'class') << ' '
-        pr << name << ' {'
+        pr << type.simple_name << ' {'
         pr.nl! { |np|
           fields.map { |m| m.javap(np.nl!); np.nl! }
         } unless fields.nil? || fields.empty?
@@ -66,7 +98,7 @@ module Charm
     class FieldAccessIns
       include JavapIpOpcode
       def javap(pr)
-          pr << ip_opcode << ' ' << owner << '.' << name << ':' << type.signature
+          pr << ip_opcode << owner << '.' << name << ':' << type.signature
       end
     end
 
@@ -84,7 +116,7 @@ module Charm
       include JavapIpOpcode
       def javap(pr)
           pr << ip_opcode
-          pr << type.signature << ' ' << constant
+          pr << type.signature << ' ' << constant.inspect
       end
     end
 
@@ -122,6 +154,10 @@ module Charm
 
     class JumpIns
       include JavapIpOpcode
+
+      def javap(pr)
+          pr << ip_opcode << '#' << (ip + offset)
+      end
     end
 
     class PopIns

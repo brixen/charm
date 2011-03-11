@@ -21,8 +21,8 @@ module Charm
         end
       end
 
-      def self.load_stream(stream)
-        ctx = Context.new StreamReader.new(stream), ClassFile.new
+      def self.load_stream(stream, resource)
+        ctx = Context.new StreamReader.new(stream), ClassFile.new(resource)
         ctx.class_file.load ctx
       end
 
@@ -82,7 +82,7 @@ module Charm
         end
 
         def a0(name, type, len_type = :u2, &action)
-          ao(0, name, type, len_type, &action) 
+          ao(0, name, type, len_type, &action)
         end
 
         def a1(name, type, len_type = :u2, &action)

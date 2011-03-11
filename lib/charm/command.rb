@@ -1,12 +1,4 @@
-require 'charm/bytecode/opcodes'
-require 'charm/bytecode/loader'
-require 'charm/bytecode/class_file'
-require 'charm/bytecode/sexp'
-require 'charm/bytecode/normalize'
-require 'charm/ast'
-require 'charm/ast/printer'
-require 'charm/ast/javap'
-require 'charm/classpath'
+require 'charm'
 require 'ostruct'
 require 'pp'
 require 'yaml'
@@ -71,11 +63,11 @@ module Charm
 
       def self.load(argv)
         cmd = parse(argv)
-        cmd.argv.map { |name|
+        [cmd.argv.shift].map { |name|
           cmd.classpath.find_class(name) or raise "Class not found: #{name}"
         }.map { |res|
-          res.open_stream { |st| Bytecode::Loader.load_stream(st) }
-        }
+          res.open_stream { |st| Bytecode::Loader.load_stream(st, res) }
+        }.tap { yield cmd if block_given? }
       end
 
       def self.run(argv = ARGV.dup)
@@ -99,6 +91,15 @@ module Charm
 
     class Java
       def self.run(argv = ARGV.dup)
+        rt = nil
+        Javap.load(argv) { |cmd| rt = Runtime.new cmd.argv, cmd.classpath }.
+          map { |cls| Rbx.run_class cls.normalize, rt, rt.classloader }
+      end
+    end
+
+    class Javax
+      def self.run(argv = ARGV.dup)
+        Javap.load(argv).map { |cls| Rbx.compile_class cls.normalize }
       end
     end
 

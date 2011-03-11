@@ -1,21 +1,12 @@
 module Charm
   module AST
     class Class
-      attr_accessor :package, :name, :methods, :fields,
+      attr_accessor :type, :methods, :fields,
                     :public, :abstract, :final, :interface,
-                    :source_file
-
-      def initialize(name)
-        @package = name.split('.')
-        @name = @package.pop
-      end
+                    :source_file, :resource
 
       def access_modifiers
         [@public, abstract, final].compact
-      end
-
-      def qualified_name
-        (package + [name]).join '.'
       end
     end
 
@@ -89,7 +80,7 @@ module Charm
     class NewIns < Struct.new(:ip, :mnemonic, :type)
     end
 
-    class JumpIns < Struct.new(:ip, :mnemonic, :target, :condition, :type)
+    class JumpIns < Struct.new(:ip, :mnemonic, :offset, :condition, :type)
     end
 
     class PopIns < Struct.new(:ip, :mnemonic, :wide)
